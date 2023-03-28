@@ -40,7 +40,7 @@ pub async fn create_completion(
         },
     )
     .await;
-    let completions = ChatCompletion::builder("gpt-3.5-turbo", messages).create().await;
+    let completions = ChatCompletion::builder("gpt-4", messages).create().await;
 
     match completions {
         Ok(completions) => match completions {

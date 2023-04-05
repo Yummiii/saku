@@ -5,6 +5,7 @@ pub struct Message {
     pub role: String,
     pub content: String,
     pub channel: i64,
+    pub name: Option<String>,
 }
 
 #[derive(FromRow)]
@@ -23,10 +24,11 @@ pub async fn get_context(db: &Pool<Sqlite>, channel: i64) -> Vec<Message> {
 }
 
 pub async fn add_context(db: &Pool<Sqlite>, msg: Message) {
-    sqlx::query("INSERT INTO Context (role, content, channel) VALUES (?, ?, ?)")
+    sqlx::query("INSERT INTO Context (role, content, channel, name) VALUES (?, ?, ?, ?)")
         .bind(msg.role)
         .bind(msg.content)
         .bind(msg.channel)
+        .bind(msg.name)
         .execute(db)
         .await
         .unwrap();

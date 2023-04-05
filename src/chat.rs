@@ -6,6 +6,7 @@ pub async fn create_completion(
     msg: &String,
     db: &Pool<Sqlite>,
     channel: u64,
+    user: String
 ) -> Result<String, ()> {
     let mut messages = vec![ChatCompletionMessage {
         role: ChatCompletionMessageRole::System,
@@ -21,14 +22,15 @@ pub async fn create_completion(
                 _ => unreachable!(),
             },
             content: ctx.content,
-            name: None,
+            name: ctx.name,
         });
     }
+
 
     messages.push(ChatCompletionMessage {
         role: ChatCompletionMessageRole::User,
         content: msg.to_owned(),
-        name: None,
+        name: Some(user.clone()),
     });
 
     add_context(
@@ -37,6 +39,7 @@ pub async fn create_completion(
             role: "user".to_string(),
             content: msg.to_owned(),
             channel: channel as i64,
+            name: Some(user),
         },
     )
     .await;
@@ -52,6 +55,7 @@ pub async fn create_completion(
                         role: "assistant".to_string(),
                         content: completion.content.clone(),
                         channel: channel as i64,
+                        name: None
                     },
                 )
                 .await;

@@ -9,7 +9,7 @@ use sqlx::{Pool, Sqlite};
 use crate::database::{add_context, Message};
 
 
-pub async fn run(options: &[CommandDataOption], db: &Pool<Sqlite>, channel: u64) -> String {
+pub async fn run(options: &[CommandDataOption], db: &Pool<Sqlite>, channel: u64, name: String) -> String {
     let file = options
         .iter()
         .find(|option| option.name == "file")
@@ -28,6 +28,7 @@ pub async fn run(options: &[CommandDataOption], db: &Pool<Sqlite>, channel: u64)
             channel: channel as i64,
             role: "user".to_string(),
             content: txt.to_string(),
+            name: Some(name)
         }).await;
         return "Contexto adicionado :)".to_string();
     } else {

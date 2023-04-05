@@ -4,6 +4,7 @@ CREATE TABLE "Context" (
 	"role"	TEXT NOT NULL,
 	"content"	TEXT NOT NULL,
 	"channel" INTEGER NOT NULL,
+	"name" TEXT,
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 

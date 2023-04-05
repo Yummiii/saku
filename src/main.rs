@@ -6,7 +6,7 @@ use serenity::{
     model::prelude::{
         command::Command,
         interaction::{Interaction, InteractionResponseType},
-        GuildId, Message, Ready, UserId,
+        GuildId, Message, Ready,
     },
     prelude::{Context, EventHandler, GatewayIntents},
     Client,
@@ -39,14 +39,20 @@ impl EventHandler for Handler {
                     .await
                 }
                 "ac" => {
-                    commands::addcontext::run(&command.data.options, &self.db, command.channel_id.0)
-                        .await
+                    commands::addcontext::run(
+                        &command.data.options,
+                        &self.db,
+                        command.channel_id.0,
+                        command.clone().user.name,
+                    )
+                    .await
                 }
                 "cs" => {
                     commands::channelstate::run(
                         &command.data.options,
                         &self.db,
                         command.channel_id.0,
+                        command.clone().user,
                     )
                     .await
                 }
@@ -105,12 +111,19 @@ impl EventHandler for Handler {
     }
 
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.author.id == UserId(368280970102833153) && msg.content != "" {
-            if is_channel_enabled(&self.db, msg.channel_id.0 as i64).await || msg.is_private() {
+        if !msg.author.bot && msg.content != "" {
+            if is_channel_enabled(&self.db, msg.channel_id.0 as i64).await
+                || (is_channel_enabled(&self.db, msg.author.id.0 as i64).await && msg.is_private())
+            {
                 let typing = msg.channel_id.start_typing(&ctx.http).unwrap();
 
-                let response =
-                    chat::create_completion(&msg.content, &self.db, msg.channel_id.0).await;
+                let response = chat::create_completion(
+                    &msg.content,
+                    &self.db,
+                    msg.channel_id.0,
+                    msg.clone().author.name,
+                )
+                .await;
                 if let Ok(response) = response {
                     for response in split_string(response, 2000) {
                         if let Err(why) = msg.channel_id.say(&ctx.http, response).await {
@@ -181,7 +194,9 @@ async fn main() {
 
     let mut client = Client::builder(
         token,
-        GatewayIntents::DIRECT_MESSAGES | GatewayIntents::GUILD_MESSAGES,
+        GatewayIntents::DIRECT_MESSAGES
+            | GatewayIntents::GUILD_MESSAGES
+            | GatewayIntents::MESSAGE_CONTENT,
     )
     .event_handler(Handler { db })
     .await

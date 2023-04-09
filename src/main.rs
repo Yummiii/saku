@@ -94,10 +94,9 @@ async fn main() {
                                         create_completion(msg.content.clone(), user, channel, db)
                                             .await;
                                     if let Ok(chat_completion) = chat_completion {
-                                        msg.channel_id
-                                            .say(&ctx.http, chat_completion)
-                                            .await
-                                            .unwrap();
+                                        for response in split_string(chat_completion, 2000) {
+                                            msg.channel_id.say(&ctx.http, response).await.unwrap();
+                                        }
                                     } else {
                                         let err = chat_completion.unwrap_err();
                                         msg.reply(&ctx.http, format!(":( {}", err)).await.unwrap();
@@ -123,4 +122,33 @@ async fn main() {
         .setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(Data { db }) }));
 
     framework.run().await.unwrap();
+}
+
+fn split_string(input: String, max_length: usize) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut current = String::new();
+
+    for word in input.split_whitespace() {
+        if current.len() + word.len() + 1 > max_length {
+            if current.is_empty() {
+                current.push_str(&word[..max_length]);
+                result.push(current);
+                current = String::from(&word[max_length..]);
+            } else {
+                result.push(current.trim_end().to_string());
+                current.clear();
+                current.push_str(word);
+                current.push(' ');
+            }
+        } else {
+            current.push_str(word);
+            current.push(' ');
+        }
+    }
+
+    if !current.trim_end().is_empty() {
+        result.push(current.trim_end().to_string());
+    }
+
+    result
 }

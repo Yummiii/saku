@@ -6,8 +6,17 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=mysql://root:root@saku_db/Saku
+  db:
+    image: "mariadb:10.5"
+    container_name: "saku_db"
+    restart: unless-stopped
     volumes:
-      - db-data:/app/    
+      - mariadb:/var/lib/mysql
+    environment:
+      - MARIADB_ROOT_PASSWORD=root
+      - MARIADB_DATABASE=Saku
 
 volumes:
-  db-data:
+  db-mariadb:

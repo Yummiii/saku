@@ -1,15 +1,16 @@
-use crate::database::clear_channel_context;
-use serenity::{
-    builder::CreateApplicationCommand,
-    model::prelude::interaction::application_command::CommandDataOption,
-};
-use sqlx::{Pool, Sqlite};
+use poise::command;
 
-pub async fn run(_options: &[CommandDataOption], db: &Pool<Sqlite>, channel: u64) -> String {
-    clear_channel_context(&db, channel as i64).await;
-    "Contexto limpo :)".to_string()
-}
+use crate::{Context, Error, database::{contexts, channels}};
 
-pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
-    command.name("cc").description("Clear Context")
+///Clear context
+#[command(slash_command)]
+pub async fn cc(ctx: Context<'_>) -> Result<(), Error> {
+    let db = &ctx.data().db;
+    if let Some(channel) = channels::get_by_discord_id(db, ctx.channel_id().0 as i64).await {
+        contexts::deactivate_channel_context(db, channel.id).await?;
+        ctx.say("Context cleared :)").await?;
+    } else {
+        ctx.say(":(").await?;
+    }
+    Ok(())
 }

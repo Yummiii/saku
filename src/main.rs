@@ -1,208 +1,126 @@
-use database::is_channel_enabled;
-use dotenv::dotenv;
+use chat::create_completion;
+use commands::get_commands;
+use configs::Configs;
+use database::{channels::Channel, users::User, Database};
 use openai::set_key;
-use serenity::{
-    async_trait,
-    model::prelude::{
-        command::Command,
-        interaction::{Interaction, InteractionResponseType},
-        GuildId, Message, Ready,
-    },
-    prelude::{Context, EventHandler, GatewayIntents},
-    Client,
+use poise::{
+    serenity_prelude::{GatewayIntents, UserId},
+    Event, Framework, FrameworkOptions, PrefixFrameworkOptions,
 };
-use sqlx::{
-    migrate,
-    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
+
+use crate::database::{
+    channels::{self, ChannelStates},
+    users::{self, UserStates},
 };
-use std::env;
 
 mod chat;
 mod commands;
+mod configs;
 mod database;
 
-struct Handler {
-    db: sqlx::SqlitePool,
+pub struct Data {
+    db: Database,
 }
-
-#[async_trait]
-impl EventHandler for Handler {
-    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
-            let content = match command.data.name.as_str() {
-                "cc" => {
-                    commands::clearcontext::run(
-                        &command.data.options,
-                        &self.db,
-                        command.channel_id.0,
-                    )
-                    .await
-                }
-                "ac" => {
-                    commands::addcontext::run(
-                        &command.data.options,
-                        &self.db,
-                        command.channel_id.0,
-                        command.clone().user.name,
-                    )
-                    .await
-                }
-                "cs" => {
-                    commands::channelstate::run(
-                        &command.data.options,
-                        &self.db,
-                        command.channel_id.0,
-                        command.clone().user,
-                    )
-                    .await
-                }
-                _ => "not implemented :(".to_string(),
-            };
-
-            if let Err(why) = command
-                .create_interaction_response(&ctx.http, |response| {
-                    response
-                        .kind(InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(content))
-                })
-                .await
-            {
-                println!("Cannot respond to slash command: {}", why);
-            }
-        }
-    }
-
-    async fn ready(&self, ctx: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
-
-        let guild_id = GuildId(
-            env::var("GUILD_ID")
-                .expect("Expected GUILD_ID in environment")
-                .parse()
-                .expect("GUILD_ID must be an integer"),
-        );
-
-        GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
-            commands
-                .create_application_command(|command| commands::clearcontext::register(command))
-                .create_application_command(|command| commands::addcontext::register(command))
-                .create_application_command(|command| commands::channelstate::register(command))
-        })
-        .await
-        .unwrap();
-
-        Command::create_global_application_command(&ctx.http, |command| {
-            commands::clearcontext::register(command)
-        })
-        .await
-        .unwrap();
-
-        Command::create_global_application_command(&ctx.http, |command| {
-            commands::addcontext::register(command)
-        })
-        .await
-        .unwrap();
-
-        Command::create_global_application_command(&ctx.http, |command| {
-            commands::channelstate::register(command)
-        })
-        .await
-        .unwrap();
-    }
-
-    async fn message(&self, ctx: Context, msg: Message) {
-        if !msg.author.bot && msg.content != "" {
-            if is_channel_enabled(&self.db, msg.channel_id.0 as i64).await
-                || (is_channel_enabled(&self.db, msg.author.id.0 as i64).await && msg.is_private())
-            {
-                let typing = msg.channel_id.start_typing(&ctx.http).unwrap();
-
-                let response = chat::create_completion(
-                    &msg.content,
-                    &self.db,
-                    msg.channel_id.0,
-                    msg.clone().author.name,
-                )
-                .await;
-                if let Ok(response) = response {
-                    for response in split_string(response, 2000) {
-                        if let Err(why) = msg.channel_id.say(&ctx.http, response).await {
-                            println!("Error sending message: {:?}", why);
-                        }
-                    }
-                } else {
-                    msg.reply(&ctx.http, "Alguma coisa explodiu :(")
-                        .await
-                        .unwrap();
-                }
-                typing.stop().unwrap();
-            }
-        }
-    }
-}
-
-fn split_string(input: String, max_length: usize) -> Vec<String> {
-    let mut result = Vec::new();
-    let mut current = String::new();
-
-    for word in input.split_whitespace() {
-        if current.len() + word.len() + 1 > max_length {
-            if current.is_empty() {
-                current.push_str(&word[..max_length]);
-                result.push(current);
-                current = String::from(&word[max_length..]);
-            } else {
-                result.push(current.trim_end().to_string());
-                current.clear();
-                current.push_str(word);
-                current.push(' ');
-            }
-        } else {
-            current.push_str(word);
-            current.push(' ');
-        }
-    }
-
-    if !current.trim_end().is_empty() {
-        result.push(current.trim_end().to_string());
-    }
-
-    result
-}
+type Error = Box<dyn std::error::Error + Send + Sync>;
+type Context<'a> = poise::Context<'a, Data, Error>;
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
+    dotenv::dotenv().ok();
 
-    set_key(env::var("OPENAI_KEY").expect("Expected OPENAI_KEY in environment"));
-    let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+    let configs = Configs::new();
+    let db = Database::new(&configs.database_url).await;
+    db.migrate().await;
+    set_key(configs.openai_key);
 
-    let db = SqlitePoolOptions::new()
-        .max_connections(5)
-        .connect_with(
-            SqliteConnectOptions::new()
-                .filename("database.sqlite")
-                .create_if_missing(true),
+    let framework = Framework::builder()
+        .options(FrameworkOptions {
+            commands: get_commands(),
+            prefix_options: PrefixFrameworkOptions {
+                prefix: Some("'".to_string()),
+                ..Default::default()
+            },
+            owners: vec![UserId(configs.owner_id)].into_iter().collect(),
+            event_handler: |ctx, event, _framework, data| {
+                Box::pin(async move {
+                    match event {
+                        Event::Message { new_message: msg } => {
+                            if !msg.author.bot
+                                && !(msg.content.starts_with("~~") && msg.content.ends_with("~~"))
+                            {
+                                let db = &data.db;
+                                let user = if let Some(user) =
+                                    users::get_by_discord_id(&db, msg.author.id.0 as i64).await
+                                {
+                                    user
+                                } else {
+                                    let mut user = User {
+                                        id: 0,
+                                        discord_id: msg.author.id.0 as i64,
+                                        name: msg.author.name.clone(),
+                                        state: UserStates::Normal,
+                                    };
+                                    user.id = users::add_user(db, &user).await.unwrap();
+                                    user
+                                };
+
+                                let channel = if let Some(channel) =
+                                    channels::get_by_discord_id(&db, msg.channel_id.0 as i64).await
+                                {
+                                    channel
+                                } else {
+                                    let mut channel = Channel {
+                                        id: 0,
+                                        discord_id: msg.channel_id.0 as i64,
+                                        state: ChannelStates::Disabled,
+                                    };
+                                    channel.id = channels::add_channel(db, &channel).await.unwrap();
+                                    channel
+                                };
+
+                                let should_reply = {
+                                    if msg.is_private() {
+                                        user.state == UserStates::DmEnabled
+                                    } else {
+                                        channel.state == ChannelStates::Enabled
+                                            && user.state != UserStates::Blocked
+                                    }
+                                };
+
+                                if should_reply {
+                                    let typing = msg.channel_id.start_typing(&ctx.http).unwrap();
+
+                                    let chat_completion =
+                                        create_completion(msg.content.clone(), user, channel, db)
+                                            .await;
+                                    if let Ok(chat_completion) = chat_completion {
+                                        msg.channel_id
+                                            .say(&ctx.http, chat_completion)
+                                            .await
+                                            .unwrap();
+                                    } else {
+                                        let err = chat_completion.unwrap_err();
+                                        msg.reply(&ctx.http, format!(":( {}", err)).await.unwrap();
+                                    }
+
+                                    typing.stop().unwrap();
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                    Ok(())
+                })
+            },
+            ..Default::default()
+        })
+        .token(configs.token)
+        .intents(
+            GatewayIntents::DIRECT_MESSAGES
+                | GatewayIntents::GUILD_MESSAGES
+                | GatewayIntents::MESSAGE_CONTENT,
         )
-        .await
-        .expect("Couldn't connect to database");
+        .setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(Data { db }) }));
 
-    migrate!("./migrations")
-        .run(&db)
-        .await
-        .expect("Couldn't run migrations");
-
-    let mut client = Client::builder(
-        token,
-        GatewayIntents::DIRECT_MESSAGES
-            | GatewayIntents::GUILD_MESSAGES
-            | GatewayIntents::MESSAGE_CONTENT,
-    )
-    .event_handler(Handler { db })
-    .await
-    .expect("Error creating client");
-
-    if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why);
-    }
+    framework.run().await.unwrap();
 }

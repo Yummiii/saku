@@ -36,7 +36,7 @@ pub async fn add_context(db: &Database, context: &Context) -> Result<i64, sqlx::
 }
 
 pub async fn deactivate_channel_context(db: &Database, channel: i64) -> Result<(), sqlx::Error> {
-    let result = sqlx::query("UPDATE Contexts SET active = false WHERE channel = ?")
+    sqlx::query("UPDATE Contexts SET active = false WHERE channel = ?")
         .bind(channel)
         .execute(db.get_pool())
         .await?;

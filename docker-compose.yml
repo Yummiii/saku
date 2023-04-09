@@ -19,4 +19,4 @@ services:
       - MARIADB_DATABASE=Saku
 
 volumes:
-  db-mariadb:
+  mariadb:

@@ -21,6 +21,7 @@ mod database;
 
 pub struct Data {
     db: Database,
+    rates_url: String,
 }
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -121,7 +122,14 @@ async fn main() {
                 | GatewayIntents::GUILD_MESSAGES
                 | GatewayIntents::MESSAGE_CONTENT,
         )
-        .setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(Data { db }) }));
+        .setup(move |_ctx, _ready, _framework| {
+            Box::pin(async move {
+                Ok(Data {
+                    db,
+                    rates_url: configs.rates_url,
+                })
+            })
+        });
 
     framework.run().await.unwrap();
 }

@@ -6,7 +6,8 @@ pub struct Configs {
     pub token: String,
     pub owner_id: u64,
     pub database_url: String,
-    pub openai_key: String
+    pub openai_key: String,
+    pub rates_url: String,
 }
 
 impl Configs {

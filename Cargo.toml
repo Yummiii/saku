@@ -26,3 +26,5 @@ num_enum = "0.6.0"
 poise = "0.5.2"
 figment = { version = "0.10.8", features = ["env"] }
 chrono = "0.4.24"
+cuid2 = "0.1.0"
+itertools = "0.10.5"

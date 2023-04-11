@@ -1,6 +1,7 @@
 use crate::database::{
     channels::Channel,
     contexts,
+    usage::{self, Usage},
     users::{self, User},
     Database,
 };
@@ -45,6 +46,7 @@ pub async fn create_completion(
             message: msg.clone(),
             active: true,
             created_at: Utc::now().timestamp(),
+            cid: channel.ccid.clone(),
             channel: channel.id,
             user: Some(user.id),
         },
@@ -64,6 +66,22 @@ pub async fn create_completion(
         .unwrap();
     if let Ok(completion) = completion {
         let msg = &completion.choices[0].message.content;
+        let usage = completion.usage.unwrap();
+
+        usage::add_usage(
+            db,
+            &Usage {
+                id: 0,
+                created_at: Utc::now().timestamp(),
+                completion_tokens: usage.completion_tokens as i32,
+                prompt_tokens: usage.prompt_tokens as i32,
+                cid: channel.ccid.clone(),
+                user: user.id,
+            },
+        )
+        .await
+        .unwrap();
+
         contexts::add_context(
             db,
             &contexts::Context {
@@ -72,6 +90,7 @@ pub async fn create_completion(
                 message: msg.clone(),
                 active: true,
                 created_at: Utc::now().timestamp(),
+                cid: channel.ccid,
                 channel: channel.id,
                 user: None,
             },

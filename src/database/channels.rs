@@ -14,13 +14,15 @@ pub enum ChannelStates {
 pub struct Channel {
     pub id: i64,
     pub discord_id: i64,
+    pub ccid: String,
     pub state: ChannelStates,
 }
 
 pub async fn add_channel(db: &Database, channel: &Channel) -> Result<i64, sqlx::Error> {
-    let result = sqlx::query("INSERT INTO Channels (discord_id, state) VALUES (?, ?)")
+    let result = sqlx::query("INSERT INTO Channels (discord_id, state, ccid) VALUES (?, ?, ?)")
         .bind(channel.discord_id)
         .bind(channel.state as u8)
+        .bind(&channel.ccid)
         .execute(db.get_pool())
         .await?;
     Ok(result.last_insert_id() as i64)
@@ -38,6 +40,15 @@ pub async fn get_by_discord_id(db: &Database, discord_id: i64) -> Option<Channel
 pub async fn change_state(db: &Database, channel: &Channel) -> Result<(), sqlx::Error> {
     sqlx::query("UPDATE Channels SET state = ? WHERE id = ?")
         .bind(channel.state as u8)
+        .bind(channel.id)
+        .execute(db.get_pool())
+        .await?;
+    Ok(())
+}
+
+pub async fn set_ccid(db: &Database, channel: &Channel) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE Channels SET ccid = ? WHERE id = ?")
+        .bind(&channel.ccid)
         .bind(channel.id)
         .execute(db.get_pool())
         .await?;

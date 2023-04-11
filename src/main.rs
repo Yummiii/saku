@@ -1,6 +1,7 @@
 use chat::create_completion;
 use commands::get_commands;
 use configs::Configs;
+use cuid2::cuid;
 use database::{channels::Channel, users::User, Database};
 use openai::set_key;
 use poise::{
@@ -73,6 +74,7 @@ async fn main() {
                                         id: 0,
                                         discord_id: msg.channel_id.0 as i64,
                                         state: ChannelStates::Disabled,
+                                        ccid: cuid(),
                                     };
                                     channel.id = channels::add_channel(db, &channel).await.unwrap();
                                     channel
@@ -124,31 +126,22 @@ async fn main() {
     framework.run().await.unwrap();
 }
 
+//eu n faço ideia de como isso funciona, foi o GPT-4 que fez
 fn split_string(input: String, max_length: usize) -> Vec<String> {
     let mut result = Vec::new();
-    let mut current = String::new();
-
-    for word in input.split_whitespace() {
-        if current.len() + word.len() + 1 > max_length {
-            if current.is_empty() {
-                current.push_str(&word[..max_length]);
-                result.push(current);
-                current = String::from(&word[max_length..]);
-            } else {
-                result.push(current.trim_end().to_string());
-                current.clear();
-                current.push_str(word);
-                current.push(' ');
-            }
+    let mut start_index = 0;
+    while start_index < input.len() {
+        let mut end_index = start_index + max_length;
+        if end_index >= input.len() {
+            end_index = input.len();
         } else {
-            current.push_str(word);
-            current.push(' ');
+            if let Some(last_space) = input[..end_index].rfind(' ') {
+                end_index = last_space;
+            }
         }
+        let chunk = &input[start_index..end_index];
+        result.push(chunk.to_string());
+        start_index = end_index + 1;
     }
-
-    if !current.trim_end().is_empty() {
-        result.push(current.trim_end().to_string());
-    }
-
     result
 }

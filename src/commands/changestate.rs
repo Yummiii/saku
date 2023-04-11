@@ -5,6 +5,7 @@ use crate::{
     },
     Context, Error,
 };
+use cuid2::cuid;
 use poise::command;
 
 /// Change state
@@ -32,6 +33,7 @@ pub async fn channel(
                 &Channel {
                     id: 0,
                     discord_id: channel.id().0 as i64,
+                    ccid: cuid(),
                     state,
                 },
             )

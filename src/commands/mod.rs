@@ -3,6 +3,7 @@ use std::error::Error as StdError;
 
 mod changestate;
 mod clearcontext;
+mod usagelog;
 
 #[poise::command(prefix_command)]
 pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
@@ -11,5 +12,5 @@ pub async fn register(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 pub fn get_commands() -> Vec<poise::Command<Data, Box<(dyn StdError + Send + Sync + 'static)>>> {
-    vec![register(), changestate::cs(), clearcontext::cc()]
+    vec![register(), changestate::cs(), clearcontext::cc(), usagelog::ul()]
 }

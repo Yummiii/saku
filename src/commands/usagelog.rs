@@ -17,6 +17,7 @@ pub async fn ul(ctx: Context<'_>, user: Option<serenity_prelude::User>) -> Resul
     let rates_url = &ctx.data().rates_url;
 
     let month = chrono::Utc::now().month() as i32;
+    let mut usages = vec![];
 
     if let Some(user) = user {
         let user = users::get_by_discord_id(db, user.id.0 as i64)
@@ -30,13 +31,11 @@ pub async fn ul(ctx: Context<'_>, user: Option<serenity_prelude::User>) -> Resul
         let (total_prompt, prompt_price, total_completion, completion_price) =
             calc(usage, rates_url).await;
 
-        ctx.say(format!(
-            "<@{}> já usou {} tokens e deve R${}",
+        usages.push((
             user.discord_id,
             total_prompt + total_completion,
-            prompt_price + completion_price
-        ))
-        .await?;
+            prompt_price + completion_price,
+        ));
     } else {
         let usage = usage::get_usage_from_month(db, month).await.unwrap();
 
@@ -46,21 +45,35 @@ pub async fn ul(ctx: Context<'_>, user: Option<serenity_prelude::User>) -> Resul
             .into_iter()
             .collect::<Vec<(i64, Vec<usage::Usage>)>>();
 
-        let mut msg = String::new();
         for user_usage in usage_grouped {
             let (total_prompt, prompt_price, total_completion, completion_price) =
                 calc(user_usage.1, rates_url).await;
             let user = users::get_by_id(db, user_usage.0).await.unwrap();
 
-            msg += &format!(
-                "<@{}>: {} tokens, R${}\n\n",
+            usages.push((
                 user.discord_id,
                 total_prompt + total_completion,
-                prompt_price + completion_price
-            );
+                prompt_price + completion_price,
+            ));
         }
-        ctx.say(msg).await?;
     }
+
+    ctx.send(|m| {
+        m.embed(|e| {
+            e.title("Usage log");
+            e.description(
+                usages
+                    .iter()
+                    .map(|x| format!("<@{}>: {} tokens - R$ {}\n\n", x.0, x.1, x.2))
+                    .join(""),
+            );
+            e.color(0x660066);
+            e.footer(|f| {
+                f.text("Shiba homosexual")                
+            })
+        })
+    })
+    .await?;
 
     Ok(())
 }

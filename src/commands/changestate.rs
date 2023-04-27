@@ -35,6 +35,7 @@ pub async fn channel(
                     discord_id: channel.id().0 as i64,
                     ccid: cuid(),
                     state,
+                    system: None,
                 },
             )
             .await

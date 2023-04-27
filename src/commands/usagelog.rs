@@ -12,11 +12,17 @@ use serde::Deserialize;
 
 ///Usage log
 #[command(slash_command)]
-pub async fn ul(ctx: Context<'_>, user: Option<serenity_prelude::User>) -> Result<(), Error> {
+pub async fn ul(
+    ctx: Context<'_>,
+    user: Option<serenity_prelude::User>,
+    #[min = 1]
+    #[max = 12]
+    month: Option<u32>,
+) -> Result<(), Error> {
     let db = &ctx.data().db;
     let rates_url = &ctx.data().rates_url;
 
-    let month = chrono::Utc::now().month() as i32;
+    let month = month.unwrap_or(chrono::Utc::now().month()) as i32;
     let mut usages = vec![];
 
     if let Some(user) = user {
@@ -60,7 +66,7 @@ pub async fn ul(ctx: Context<'_>, user: Option<serenity_prelude::User>) -> Resul
 
     ctx.send(|m| {
         m.embed(|e| {
-            e.title("Usage log");
+            e.title(format!("Usage log for month {}", month));
             e.description(
                 usages
                     .iter()
@@ -68,9 +74,7 @@ pub async fn ul(ctx: Context<'_>, user: Option<serenity_prelude::User>) -> Resul
                     .join(""),
             );
             e.color(0x660066);
-            e.footer(|f| {
-                f.text("Shiba homosexual")                
-            })
+            e.footer(|f| f.text("Shiba homosexual"))
         })
     })
     .await?;

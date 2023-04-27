@@ -15,7 +15,9 @@ pub async fn create_completion(
     db: &Database,
 ) -> Result<String, String> {
     let mut messages = vec![ChatCompletionMessage {
-        content: "Your are a nice Discord chat bot called Saku".to_string(),
+        content: channel
+            .system
+            .unwrap_or("Your are a nice Discord chat bot called Saku".to_string()),
         name: None,
         role: ChatCompletionMessageRole::System,
     }];

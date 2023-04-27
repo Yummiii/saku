@@ -16,6 +16,7 @@ pub struct Channel {
     pub discord_id: i64,
     pub ccid: String,
     pub state: ChannelStates,
+    pub system: Option<String>
 }
 
 pub async fn add_channel(db: &Database, channel: &Channel) -> Result<i64, sqlx::Error> {
@@ -49,6 +50,15 @@ pub async fn change_state(db: &Database, channel: &Channel) -> Result<(), sqlx::
 pub async fn set_ccid(db: &Database, channel: &Channel) -> Result<(), sqlx::Error> {
     sqlx::query("UPDATE Channels SET ccid = ? WHERE id = ?")
         .bind(&channel.ccid)
+        .bind(channel.id)
+        .execute(db.get_pool())
+        .await?;
+    Ok(())
+}
+
+pub async fn set_system(db: &Database, channel: &Channel) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE Channels SET system = ? WHERE id = ?")
+        .bind(&channel.system)
         .bind(channel.id)
         .execute(db.get_pool())
         .await?;

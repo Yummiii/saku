@@ -76,6 +76,7 @@ async fn main() {
                                         discord_id: msg.channel_id.0 as i64,
                                         state: ChannelStates::Disabled,
                                         ccid: cuid(),
+                                        system: None,
                                     };
                                     channel.id = channels::add_channel(db, &channel).await.unwrap();
                                     channel

@@ -1,5 +1,5 @@
 use crate::database::{
-    channels::Channel,
+    channels::{Channel, ChannelStates},
     contexts,
     usage::{self, Usage},
     users::{self, User},
@@ -70,13 +70,23 @@ pub async fn create_completion(
         let msg = &completion.choices[0].message.content;
         let usage = completion.usage.unwrap();
 
+        let (prompt, completion) = if channel.state == ChannelStates::NoLogs {
+
+            let prompt_up = (usage.prompt_tokens as f32 * 0.10).ceil() as u32;
+            let completion_up = (usage.prompt_tokens as f32 * 0.10).ceil() as u32;
+
+            ((usage.prompt_tokens + prompt_up) as i32, (usage.completion_tokens + completion_up) as i32)
+        } else {
+            (usage.prompt_tokens as i32, usage.completion_tokens as i32)
+        };
+
         usage::add_usage(
             db,
             &Usage {
                 id: 0,
                 created_at: Utc::now().timestamp(),
-                completion_tokens: usage.completion_tokens as i32,
-                prompt_tokens: usage.prompt_tokens as i32,
+                completion_tokens: completion,
+                prompt_tokens: prompt,
                 cid: channel.ccid.clone(),
                 user: user.id,
             },

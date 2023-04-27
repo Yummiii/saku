@@ -8,6 +8,7 @@ use sqlx::{FromRow, Type};
 pub enum ChannelStates {
     Disabled,
     Enabled,
+    NoLogs
 }
 
 #[derive(FromRow)]

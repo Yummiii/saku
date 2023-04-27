@@ -87,7 +87,8 @@ async fn main() {
                                     if msg.is_private() {
                                         user.state == UserStates::DmEnabled
                                     } else {
-                                        channel.state == ChannelStates::Enabled
+                                        (channel.state == ChannelStates::Enabled
+                                            || channel.state == ChannelStates::NoLogs)
                                             && user.state != UserStates::Blocked
                                     }
                                 };

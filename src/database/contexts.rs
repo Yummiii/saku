@@ -44,3 +44,11 @@ pub async fn deactivate_channel_context(db: &Database, channel: i64) -> Result<(
         .await?;
     Ok(())
 }
+
+pub async fn clear_channel_context(db: &Database, channel: i64) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM Contexts WHERE channel = ?")
+        .bind(channel)
+        .execute(db.get_pool())
+        .await?;
+    Ok(())
+}

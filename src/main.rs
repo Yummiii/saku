@@ -49,6 +49,7 @@ async fn main() {
                         Event::Message { new_message: msg } => {
                             if !msg.author.bot
                                 && !(msg.content.starts_with("~~") && msg.content.ends_with("~~"))
+                                && !msg.content.starts_with("> ")
                             {
                                 let db = &data.db;
                                 let user = if let Some(user) =

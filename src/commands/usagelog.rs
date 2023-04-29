@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     database::{
         usage::{self, Usage},
@@ -8,7 +10,10 @@ use crate::{
 };
 use chrono::Datelike;
 use itertools::Itertools;
-use poise::{command, serenity_prelude};
+use poise::{
+    command,
+    serenity_prelude::{self, Activity},
+};
 use serde::Deserialize;
 
 ///Usage log
@@ -20,8 +25,8 @@ pub async fn ul(
     #[max = 12]
     month: Option<u32>,
 ) -> Result<(), Error> {
+    ctx.defer().await?;
     let db = &ctx.data().db;
-    let rates_url = &ctx.data().rates_url;
 
     let month = month.unwrap_or(chrono::Utc::now().month()) as i32;
     let usages = if let Some(user) = user {
@@ -42,7 +47,10 @@ pub async fn ul(
         .collect::<Vec<(i64, Vec<Usage>)>>();
 
     let mut msg = String::new();
-    // println!("{:#?}", usages);
+    let dol_price = get_price().await;
+
+    let mut global_price = 0.0;
+    let mut global_tokens = 0;
 
     for (user, usages) in usages {
         let user = users::get_by_id(db, user).await.unwrap();
@@ -53,21 +61,30 @@ pub async fn ul(
             let price = if usage.model == Models::Gpt4 {
                 let price_prompt = usage.prompt_tokens as f32 * 0.000030;
                 let price_completion = usage.completion_tokens as f32 * 0.000060;
-                convert(price_prompt + price_completion, rates_url).await
+                price_prompt + price_completion
             } else {
-                convert(
-                    (usage.prompt_tokens + usage.completion_tokens) as f32 * 0.000002,
-                    rates_url,
-                )
-                .await
+                (usage.prompt_tokens + usage.completion_tokens) as f32 * 0.000002
             };
 
             total_tokens += usage.prompt_tokens + usage.completion_tokens;
-            total += price * usage.multiplier.unwrap_or(1.);
+            total += (price * usage.multiplier.unwrap_or(1.)) * dol_price;
         }
 
-        msg += &format!("{} [{}] = R${} ({})\n\n", user.name, user.discord_id, total, total_tokens);
+        global_price += total;
+        global_tokens += total_tokens;
+
+        msg += &format!(
+            "**{}: R${}** ({}) [{}]\n\n",
+            user.name, total, total_tokens, user.discord_id
+        );
     }
+
+    ctx.serenity_context()
+        .set_activity(Activity::watching(&format!(
+            "Pessoas gastando R${} | {} tokens",
+            global_price.ceil(), global_tokens
+        )))
+        .await;
 
     ctx.send(|m| {
         m.embed(|e| {
@@ -75,37 +92,25 @@ pub async fn ul(
             e.description(msg);
             e.color(0x660066)
         })
-    }).await.unwrap();
+    })
+    .await
+    .unwrap();
 
     Ok(())
 }
 
 #[derive(Deserialize)]
-struct Exchange {
-    #[serde(rename = "conversion_rates")]
-    pub rates: ConversionRates,
+struct Currency {
+    pub bid: String,
 }
 
-#[derive(Deserialize)]
-struct ConversionRates {
-    #[serde(rename = "BRL")]
-    pub brl: f32,
-}
-
-async fn convert(usd: f32, rates_url: &String) -> f32 {
-    let response: Exchange = reqwest::get(rates_url).await.unwrap().json().await.unwrap();
-    usd * response.rates.brl
-
-    // let total_prompt = usage.iter().fold(0, |acc, x| acc + x.prompt_tokens);
-    // let prompt_price = total_prompt as f32 * 0.000030;
-
-    // let total_completion = usage.iter().fold(0, |acc, x| acc + x.completion_tokens);
-    // let completion_price = total_completion as f32 * 0.000060;
-
-    // (
-    //     total_prompt,
-    //     prompt_price * response.rates.brl,
-    //     total_completion,
-    //     completion_price * response.rates.brl,
-    // )
+async fn get_price() -> f32 {
+    let url = "https://economia.awesomeapi.com.br/last/USD-BRL";
+    let response = reqwest::get(url)
+        .await
+        .unwrap()
+        .json::<HashMap<String, Currency>>()
+        .await
+        .unwrap();
+    response.get("USDBRL").unwrap().bid.parse::<f32>().unwrap()
 }

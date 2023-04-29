@@ -1,14 +1,17 @@
 use super::Database;
+use enumflags2::bitflags;
 use num_enum::IntoPrimitive;
 use poise::ChoiceParameter;
 use sqlx::{FromRow, Type};
 
-#[derive(IntoPrimitive, Clone, Copy, Type, ChoiceParameter, PartialEq)]
+#[derive(IntoPrimitive, Clone, Copy, Type, ChoiceParameter, PartialEq, PartialOrd)]
 #[repr(u8)]
+#[bitflags]
 pub enum UserStates {
     Normal,
     Blocked,
-    DmEnabled,
+    SemImposto,
+    DmEnabled
 }
 
 #[derive(FromRow)]

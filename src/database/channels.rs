@@ -1,4 +1,5 @@
 use super::Database;
+use crate::models::Models;
 use num_enum::IntoPrimitive;
 use poise::ChoiceParameter;
 use sqlx::{FromRow, Type};
@@ -8,7 +9,7 @@ use sqlx::{FromRow, Type};
 pub enum ChannelStates {
     Disabled,
     Enabled,
-    NoLogs
+    NoLogs,
 }
 
 #[derive(FromRow)]
@@ -17,16 +18,19 @@ pub struct Channel {
     pub discord_id: i64,
     pub ccid: String,
     pub state: ChannelStates,
-    pub system: Option<String>
+    pub system: Option<String>,
+    pub model: Models,
 }
 
 pub async fn add_channel(db: &Database, channel: &Channel) -> Result<i64, sqlx::Error> {
-    let result = sqlx::query("INSERT INTO Channels (discord_id, state, ccid) VALUES (?, ?, ?)")
-        .bind(channel.discord_id)
-        .bind(channel.state as u8)
-        .bind(&channel.ccid)
-        .execute(db.get_pool())
-        .await?;
+    let result =
+        sqlx::query("INSERT INTO Channels (discord_id, state, ccid, model) VALUES (?, ?, ?, ?)")
+            .bind(channel.discord_id)
+            .bind(channel.state as u8)
+            .bind(&channel.ccid)
+            .bind(channel.model as u8)
+            .execute(db.get_pool())
+            .await?;
     Ok(result.last_insert_id() as i64)
 }
 
@@ -60,6 +64,15 @@ pub async fn set_ccid(db: &Database, channel: &Channel) -> Result<(), sqlx::Erro
 pub async fn set_system(db: &Database, channel: &Channel) -> Result<(), sqlx::Error> {
     sqlx::query("UPDATE Channels SET system = ? WHERE id = ?")
         .bind(&channel.system)
+        .bind(channel.id)
+        .execute(db.get_pool())
+        .await?;
+    Ok(())
+}
+
+pub async fn set_model(db: &Database, channel: &Channel) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE Channels SET model = ? WHERE id = ?")
+        .bind(channel.model as u8)
         .bind(channel.id)
         .execute(db.get_pool())
         .await?;

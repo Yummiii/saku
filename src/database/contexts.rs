@@ -52,3 +52,16 @@ pub async fn clear_channel_context(db: &Database, channel: i64) -> Result<(), sq
         .await?;
     Ok(())
 }
+
+pub async fn update_cid_for_channel(
+    db: &Database,
+    channel: i64,
+    cid: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE Contexts SET cid = ? WHERE channel = ?")
+        .bind(cid)
+        .bind(channel)
+        .execute(db.get_pool())
+        .await?;
+    Ok(())
+}

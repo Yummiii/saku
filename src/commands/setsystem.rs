@@ -2,7 +2,7 @@ use crate::{Context, Error, database::channels};
 use poise::command;
 
 /// Set system
-#[command(slash_command, owners_only)]
+#[command(slash_command)]
 pub async fn ss(ctx: Context<'_>, system: Option<String>) -> Result<(), Error> {
     let db = &ctx.data().db;
     if let Some(mut channel) = channels::get_by_discord_id(db, ctx.channel_id().0 as i64).await {

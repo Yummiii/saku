@@ -3,6 +3,7 @@ use crate::{
         channels::{self, Channel, ChannelStates},
         users::{self, User, UserStates},
     },
+    models::Models,
     Context, Error,
 };
 use cuid2::cuid;
@@ -36,6 +37,7 @@ pub async fn channel(
                     ccid: cuid(),
                     state,
                     system: None,
+                    model: Models::Gpt3,
                 },
             )
             .await

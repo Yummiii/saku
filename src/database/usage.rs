@@ -1,6 +1,6 @@
-use sqlx::FromRow;
-
 use super::Database;
+use crate::models::Models;
+use sqlx::FromRow;
 
 #[derive(FromRow, Debug)]
 pub struct Usage {
@@ -10,15 +10,19 @@ pub struct Usage {
     pub completion_tokens: i32,
     pub cid: String,
     pub user: i64,
+    pub multiplier: Option<f32>,
+    pub model: Models,
 }
 
 pub async fn add_usage(db: &Database, usage: &Usage) -> Result<(), sqlx::Error> {
-    sqlx::query("INSERT INTO UsageLog (created_at, prompt_tokens, completion_tokens, cid, user) VALUES (?, ?, ?, ?, ?)")
+    sqlx::query("INSERT INTO UsageLog (created_at, prompt_tokens, completion_tokens, cid, user, multiplier, model) VALUES (?, ?, ?, ?, ?, ?, ?)")
         .bind(usage.created_at)
         .bind(usage.prompt_tokens)
         .bind(usage.completion_tokens)
         .bind(&usage.cid)
         .bind(usage.user)
+        .bind(usage.multiplier)
+        .bind(usage.model as u8)
         .execute(db.get_pool())
         .await?;
     Ok(())

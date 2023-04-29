@@ -1,23 +1,24 @@
+use crate::database::{
+    channels::{self, ChannelStates},
+    users::{self, UserStates},
+};
 use chat::create_completion;
 use commands::get_commands;
 use configs::Configs;
 use cuid2::cuid;
 use database::{channels::Channel, users::User, Database};
+use models::Models;
 use openai::set_key;
 use poise::{
     serenity_prelude::{GatewayIntents, UserId},
     Event, Framework, FrameworkOptions, PrefixFrameworkOptions,
 };
 
-use crate::database::{
-    channels::{self, ChannelStates},
-    users::{self, UserStates},
-};
-
 mod chat;
 mod commands;
 mod configs;
 mod database;
+mod models;
 
 pub struct Data {
     db: Database,
@@ -78,6 +79,7 @@ async fn main() {
                                         state: ChannelStates::Disabled,
                                         ccid: cuid(),
                                         system: None,
+                                        model: Models::Gpt3,
                                     };
                                     channel.id = channels::add_channel(db, &channel).await.unwrap();
                                     channel
@@ -85,7 +87,7 @@ async fn main() {
 
                                 let should_reply = {
                                     if msg.is_private() {
-                                        user.state == UserStates::DmEnabled
+                                        user.state >= UserStates::DmEnabled
                                     } else {
                                         (channel.state == ChannelStates::Enabled
                                             || channel.state == ChannelStates::NoLogs)

@@ -2,7 +2,7 @@ use crate::database::{
     channels::{Channel, ChannelStates},
     contexts,
     usage::{self, Usage},
-    users::{self, User},
+    users::{self, User, UserStates},
     Database,
 };
 use chrono::Utc;
@@ -62,7 +62,7 @@ pub async fn create_completion(
         role: ChatCompletionMessageRole::User,
     });
 
-    let completion = ChatCompletion::builder("gpt-4", messages)
+    let completion = ChatCompletion::builder(&channel.model.model(), messages)
         .create()
         .await
         .unwrap();
@@ -70,25 +70,21 @@ pub async fn create_completion(
         let msg = &completion.choices[0].message.content;
         let usage = completion.usage.unwrap();
 
-        let (prompt, completion) = if channel.state == ChannelStates::NoLogs {
-
-            let prompt_up = (usage.prompt_tokens as f32 * 0.10).ceil() as u32;
-            let completion_up = (usage.prompt_tokens as f32 * 0.10).ceil() as u32;
-
-            ((usage.prompt_tokens + prompt_up) as i32, (usage.completion_tokens + completion_up) as i32)
-        } else {
-            (usage.prompt_tokens as i32, usage.completion_tokens as i32)
-        };
-
         usage::add_usage(
             db,
             &Usage {
                 id: 0,
                 created_at: Utc::now().timestamp(),
-                completion_tokens: completion,
-                prompt_tokens: prompt,
+                completion_tokens: usage.completion_tokens as i32,
+                prompt_tokens: usage.prompt_tokens as i32,
                 cid: channel.ccid.clone(),
                 user: user.id,
+                multiplier: if channel.state == ChannelStates::NoLogs && user.state < UserStates::SemImposto {
+                    Some(1.1)
+                } else {
+                    None
+                },
+                model: channel.model,
             },
         )
         .await

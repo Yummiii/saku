@@ -75,7 +75,7 @@ pub async fn ul(
             e.description(msg);
             e.color(0x660066)
         })
-    }).await?;
+    }).await.unwrap();
 
     Ok(())
 }

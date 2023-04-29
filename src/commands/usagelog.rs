@@ -47,6 +47,7 @@ pub async fn ul(
     for (user, usages) in usages {
         let user = users::get_by_id(db, user).await.unwrap();
         let mut total = 0.0;
+        let mut total_tokens = 0;
 
         for usage in usages {
             let price = if usage.model == Models::Gpt4 {
@@ -61,10 +62,11 @@ pub async fn ul(
                 .await
             };
 
+            total_tokens += usage.prompt_tokens + usage.completion_tokens;
             total += price * usage.multiplier.unwrap_or(1.);
         }
 
-        msg += &format!("{} [{}] = R${}\n\n", user.name, user.discord_id, total);
+        msg += &format!("{} [{}] = R${} ({})\n\n", user.name, user.discord_id, total, total_tokens);
     }
 
     ctx.send(|m| {

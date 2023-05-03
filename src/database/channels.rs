@@ -20,15 +20,17 @@ pub struct Channel {
     pub state: ChannelStates,
     pub system: Option<String>,
     pub model: Models,
+    pub virtual_user: Option<i64>
 }
 
 pub async fn add_channel(db: &Database, channel: &Channel) -> Result<i64, sqlx::Error> {
     let result =
-        sqlx::query("INSERT INTO Channels (discord_id, state, ccid, model) VALUES (?, ?, ?, ?)")
+        sqlx::query("INSERT INTO Channels (discord_id, state, ccid, model, virtual_user) VALUES (?, ?, ?, ?, ?)")
             .bind(channel.discord_id)
             .bind(channel.state as u8)
             .bind(&channel.ccid)
             .bind(channel.model as u8)
+            .bind(channel.virtual_user)
             .execute(db.get_pool())
             .await?;
     Ok(result.last_insert_id() as i64)
@@ -74,6 +76,15 @@ pub async fn set_model(db: &Database, channel: &Channel) -> Result<(), sqlx::Err
     sqlx::query("UPDATE Channels SET model = ? WHERE id = ?")
         .bind(channel.model as u8)
         .bind(channel.id)
+        .execute(db.get_pool())
+        .await?;
+    Ok(())
+}
+
+pub async fn set_virtual_user(db: &Database, id: i64, vuser: i64) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE Channels SET virtual_user = ? WHERE id = ?")
+        .bind(vuser)
+        .bind(id)
         .execute(db.get_pool())
         .await?;
     Ok(())

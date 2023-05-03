@@ -38,6 +38,7 @@ pub async fn channel(
                     state,
                     system: None,
                     model: Models::Gpt3,
+                    virtual_user: None,
                 },
             )
             .await
@@ -73,6 +74,7 @@ pub async fn user(
                 discord_id: user.id.0 as i64,
                 name: user.name,
                 state,
+                virtal: false,
             },
         )
         .await

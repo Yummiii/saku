@@ -62,6 +62,7 @@ async fn main() {
                                         discord_id: msg.author.id.0 as i64,
                                         name: msg.author.name.clone(),
                                         state: UserStates::Normal,
+                                        virtal: false,
                                     };
                                     user.id = users::add_user(db, &user).await.unwrap();
                                     user
@@ -79,6 +80,7 @@ async fn main() {
                                         ccid: cuid(),
                                         system: None,
                                         model: Models::Gpt3,
+                                        virtual_user: None,
                                     };
                                     channel.id = channels::add_channel(db, &channel).await.unwrap();
                                     channel

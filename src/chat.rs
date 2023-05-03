@@ -2,15 +2,15 @@ use crate::database::{
     channels::{Channel, ChannelStates},
     contexts,
     usage::{self, Usage},
-    users::{self, User, UserStates},
-    Database,
+    users::{self, User},
+    Database, virtualusers,
 };
 use chrono::Utc;
 use openai::chat::{ChatCompletion, ChatCompletionMessage, ChatCompletionMessageRole};
 
 pub async fn create_completion(
     msg: String,
-    user: User,
+    mut user: User,
     channel: Channel,
     db: &Database,
 ) -> Result<String, String> {
@@ -70,6 +70,13 @@ pub async fn create_completion(
         let msg = &completion.choices[0].message.content;
         let usage = completion.usage.unwrap();
 
+        if let Some(vuser) = channel.virtual_user {
+            let users = virtualusers::get_all_virtual_users(db, vuser).await.unwrap();
+            if users.iter().any(|x| x.user_id == user.id) {
+                user = users::get_by_id(db, vuser).await.unwrap();
+            } 
+        }
+
         usage::add_usage(
             db,
             &Usage {
@@ -79,7 +86,7 @@ pub async fn create_completion(
                 prompt_tokens: usage.prompt_tokens as i32,
                 cid: channel.ccid.clone(),
                 user: user.id,
-                multiplier: if channel.state == ChannelStates::NoLogs && user.state < UserStates::SemImposto {
+                multiplier: if channel.state == ChannelStates::NoLogs {
                     Some(1.1)
                 } else {
                     None

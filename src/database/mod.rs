@@ -9,6 +9,7 @@ pub mod users;
 pub mod channels;
 pub mod contexts;
 pub mod usage;
+pub mod virtualusers;
 
 pub struct Database {
     pool: Pool<MySql>,

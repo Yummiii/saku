@@ -20,6 +20,9 @@ pub struct User {
     pub discord_id: i64,
     pub name: String,
     pub state: UserStates,
+    //this is not a typo
+    #[sqlx(rename = "virtual")]
+    pub virtal: bool
 }
 
 impl Default for User {
@@ -29,15 +32,17 @@ impl Default for User {
             discord_id: 0,
             name: "".into(),
             state: UserStates::Normal,
+            virtal: false
         }
     }
 }
 
 pub async fn add_user(db: &Database, user: &User) -> Result<i64, sqlx::Error> {
-    let result = sqlx::query("INSERT INTO Users (discord_id, name, state) VALUES (?, ?, ?)")
+    let result = sqlx::query("INSERT INTO Users (discord_id, name, state, virtual) VALUES (?, ?, ?, ?)")
         .bind(user.discord_id)
         .bind(&user.name)
         .bind(user.state as u8)
+        .bind(user.virtal)
         .execute(db.get_pool())
         .await?;
     Ok(result.last_insert_id() as i64)

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     database::{
         usage::{self, Usage},
-        users,
+        users::{self, UserStates},
     },
     models::Models,
     Context, Error,
@@ -67,14 +67,21 @@ pub async fn ul(
             };
 
             total_tokens += usage.prompt_tokens + usage.completion_tokens;
-            total += (price * usage.multiplier.unwrap_or(1.)) * dol_price;
+            
+            let multiplier = if user.state >= UserStates::SemImposto {
+                1.
+            } else {
+                usage.multiplier.unwrap_or(1.)
+            };
+
+            total += (price * multiplier) * dol_price;
         }
 
         global_price += total;
         global_tokens += total_tokens;
 
         msg += &format!(
-            "**{}: R${}** ({}) [{}]\n\n",
+            "**{}: R${:.2}** ({}) [{}]\n\n",
             user.name, total, total_tokens, user.discord_id
         );
     }

@@ -96,11 +96,30 @@ async fn main() {
                                     }
                                 };
 
+
                                 if should_reply {
                                     let typing = msg.channel_id.start_typing(&ctx.http).unwrap();
 
+                                    let mut msgs = vec![msg.content.clone()];
+                                    for attachment in &msg.attachments {
+                                        if let Some(content_type) = &attachment.content_type {
+                                            if content_type.starts_with("text/") {
+                                                let client = reqwest::Client::new();
+                                                let response = client
+                                                    .get(attachment.url.clone())
+                                                    .send()
+                                                    .await
+                                                    .unwrap()
+                                                    .text()
+                                                    .await
+                                                    .unwrap();
+                                                msgs.push(response);
+                                            }
+                                        }
+                                    }
+
                                     let chat_completion =
-                                        create_completion(msg.content.clone(), user, channel, db)
+                                        create_completion(msgs, user, channel, db)
                                             .await;
                                     if let Ok(chat_completion) = chat_completion {
                                         for response in split_string(chat_completion, 2000) {

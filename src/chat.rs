@@ -3,13 +3,13 @@ use crate::database::{
     contexts,
     usage::{self, Usage},
     users::{self, User},
-    Database, virtualusers,
+    virtualusers, Database,
 };
 use chrono::Utc;
 use openai::chat::{ChatCompletion, ChatCompletionMessage, ChatCompletionMessageRole};
 
 pub async fn create_completion(
-    msg: String,
+    msgs: Vec<String>,
     mut user: User,
     channel: Channel,
     db: &Database,
@@ -40,27 +40,29 @@ pub async fn create_completion(
         });
     }
 
-    contexts::add_context(
-        db,
-        &contexts::Context {
-            id: 0,
-            role: "user".to_string(),
-            message: msg.clone(),
-            active: true,
-            created_at: Utc::now().timestamp(),
-            cid: channel.ccid.clone(),
-            channel: channel.id,
-            user: Some(user.id),
-        },
-    )
-    .await
-    .unwrap();
+    for msg in msgs {
+        contexts::add_context(
+            db,
+            &contexts::Context {
+                id: 0,
+                role: "user".to_string(),
+                message: msg.clone(),
+                active: true,
+                created_at: Utc::now().timestamp(),
+                cid: channel.ccid.clone(),
+                channel: channel.id,
+                user: Some(user.id),
+            },
+        )
+        .await
+        .unwrap();
 
-    messages.push(ChatCompletionMessage {
-        content: msg,
-        name: Some(user.name),
-        role: ChatCompletionMessageRole::User,
-    });
+        messages.push(ChatCompletionMessage {
+            content: msg,
+            name: Some(user.name.clone()),
+            role: ChatCompletionMessageRole::User,
+        });
+    }
 
     let completion = ChatCompletion::builder(&channel.model.model(), messages)
         .create()
@@ -71,10 +73,12 @@ pub async fn create_completion(
         let usage = completion.usage.unwrap();
 
         if let Some(vuser) = channel.virtual_user {
-            let users = virtualusers::get_all_virtual_users(db, vuser).await.unwrap();
+            let users = virtualusers::get_all_virtual_users(db, vuser)
+                .await
+                .unwrap();
             if users.iter().any(|x| x.user_id == user.id) {
                 user = users::get_by_id(db, vuser).await.unwrap();
-            } 
+            }
         }
 
         usage::add_usage(

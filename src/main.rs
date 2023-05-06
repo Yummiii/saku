@@ -13,6 +13,7 @@ use poise::{
     serenity_prelude::{GatewayIntents, UserId},
     Event, Framework, FrameworkOptions, PrefixFrameworkOptions,
 };
+use serde_json::json;
 
 mod chat;
 mod commands;
@@ -96,11 +97,15 @@ async fn main() {
                                     }
                                 };
 
-
                                 if should_reply {
                                     let typing = msg.channel_id.start_typing(&ctx.http).unwrap();
 
                                     let mut msgs = vec![msg.content.clone()];
+
+                                    for embed in &msg.embeds {
+                                        msgs.push(serde_json::to_string(embed).unwrap());
+                                    }
+
                                     for attachment in &msg.attachments {
                                         if let Some(content_type) = &attachment.content_type {
                                             if content_type.starts_with("text/") {
@@ -119,8 +124,7 @@ async fn main() {
                                     }
 
                                     let chat_completion =
-                                        create_completion(msgs, user, channel, db)
-                                            .await;
+                                        create_completion(msgs, user, channel, db).await;
                                     if let Ok(chat_completion) = chat_completion {
                                         for response in split_string(chat_completion, 2000) {
                                             msg.channel_id.say(&ctx.http, response).await.unwrap();

@@ -4,4 +4,5 @@ public interface ISakuConfig
 {
     string BotToken { get; }
     string DevelopGuild { get; }
+    string ConnectionString { get; }
 }

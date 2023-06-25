@@ -26,7 +26,7 @@ public class MessageCreatedEvent : IAutoLoadEvents
     {
         if(arg.Author.IsBot) return;
         
-        if(!await _iaChatService.CheckPermissions(arg.Author.Id, arg.Channel.Id)) return;
+        if(!await _iaChatService.CheckPermissions(arg.Author.Id, arg.Author.Username, arg.Channel.Id)) return;
 
         await arg.Channel.TriggerTypingAsync();
         var input = new InputChatMessageViewModel(arg.Author.Id, arg.Channel.Id, arg.Content, arg.Author.Username,

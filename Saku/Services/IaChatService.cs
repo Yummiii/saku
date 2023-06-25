@@ -10,7 +10,7 @@ using Saku.ViewModels;
 
 namespace Saku.Services;
 
-[Service(typeof(IIaChatService), LifeTime.Singleton)]
+[Service(typeof(IIaChatService))]
 public class IaChatService : IIaChatService
 {
     private readonly IOpenIaAdapter _openIaAdapter;
@@ -21,6 +21,8 @@ public class IaChatService : IIaChatService
     private readonly IChannelService _channelService;
 
     private bool _successPermissions;
+    private ChannelViewModel? _lastChannel;
+    private UserViewModel? _lastUser;
 
     public IaChatService(
         IOpenIaAdapter openIaAdapter,
@@ -38,26 +40,33 @@ public class IaChatService : IIaChatService
         _channelService = channelService;
 
         _successPermissions = false;
+        _lastChannel = null;
+        _lastUser = null;
     }
 
-    public async ValueTask<bool> CheckPermissions(ulong discordUserId, ulong discordChannelId)
+    public async ValueTask<bool> CheckPermissions(ulong discordUserId, string userName, ulong discordChannelId)
     {
         var channel = await _channelService.GetByDiscordId(discordChannelId);
+        _lastChannel = channel;
         _successPermissions = channel?.State.HasFlag(ChannelState.Enable) == true;
+
+        if (!_successPermissions) return false;
+        
+        var userFilter = new UserRegisterViewModel(discordUserId, userName);
+        var user = await _userService.AddOrGetUser(userFilter);
+        _lastUser = user;
+        _successPermissions = !_lastUser.State.HasFlag(UserState.Blocked); 
+        
         return _successPermissions;
     }
 
     public async Task<string?> ProcessMessageSend(InputChatMessageViewModel input)
     {
-        if (!_successPermissions) return null;
-
-        var userFilter = new UserRegisterViewModel(input.DiscordUserId, input.UserName);
-        var user = await _userService.AddOrGetUser(userFilter);
-
+        if (!_successPermissions || _lastUser is null || _lastChannel is null) return null;
 
         var newInput = input with
         {
-            UserName = user.UserName
+            UserName = _lastUser.UserName
         };
         
         var chatInput = _mapper.Map<ChatMessageViewModel>(newInput);
@@ -66,7 +75,7 @@ public class IaChatService : IIaChatService
         contextToChat.AddLast(chatInput);
         var userInputModel = _mapper.Map<ChatContextModel>(chatInput);
         userInputModel.ChannelId = input.DiscordChannelId;
-        userInputModel.UserId = user.Id;
+        userInputModel.UserId = _lastUser.Id;
         await _chatContextRepository.Add(userInputModel);
 
 

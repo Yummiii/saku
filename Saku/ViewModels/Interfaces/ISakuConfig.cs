@@ -6,4 +6,5 @@ public interface ISakuConfig
     string DevelopGuild { get; }
     string ConnectionString { get; }
     string OpenIaToken { get; }
+    string BotOwner { get; }
 }

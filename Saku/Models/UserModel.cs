@@ -15,4 +15,5 @@ public class UserModel
     public UserState State { get; set; }
 
     public IEnumerable<ChatContextModel>? ChatContexts { get; set; }
+    public IEnumerable<ChannelModel>? BoundedChannels { get; set; }
 }

@@ -12,15 +12,14 @@ public class ChatContextModelConfiguration : IEntityTypeConfiguration<ChatContex
 
         builder.Property(x => x.ChatType).HasConversion<int>().IsRequired();
 
-        builder.Property(x => x.Message).HasColumnType("text").IsRequired();
+        builder.Property(x => x.Message).HasColumnType("longtext").IsRequired();
 
         builder.Property(x => x.IsPresentInCurrentContext).IsRequired();
         builder.HasIndex(x => x.IsPresentInCurrentContext);
 
         builder.Property(x => x.CreatedAt).IsRequired();
 
-        builder.Property(x => x.ChannelId).IsRequired();
-
         builder.HasOne(x => x.User).WithMany(x => x.ChatContexts).HasForeignKey(x => x.UserId);
+        builder.HasOne(x => x.Channel).WithMany(x => x.ChatContextModels).HasForeignKey(x => x.ChannelId).IsRequired();
     }
 }

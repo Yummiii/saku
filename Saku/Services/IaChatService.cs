@@ -18,23 +18,39 @@ public class IaChatService : IIaChatService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly IUserService _userService;
+    private readonly IChannelService _channelService;
+
+    private bool _successPermissions;
 
     public IaChatService(
         IOpenIaAdapter openIaAdapter,
         IMapper mapper,
         IChatContextRepository chatContextRepository,
         IUnitOfWork unitOfWork, 
-        IUserService userService)
+        IUserService userService, 
+        IChannelService channelService)
     {
         _openIaAdapter = openIaAdapter;
         _mapper = mapper;
         _chatContextRepository = chatContextRepository;
         _unitOfWork = unitOfWork;
         _userService = userService;
+        _channelService = channelService;
+
+        _successPermissions = false;
     }
 
-    public async Task<string> ProcessMessageSend(InputChatMessageViewModel input)
+    public async ValueTask<bool> CheckPermissions(ulong discordUserId, ulong discordChannelId)
     {
+        var channel = await _channelService.GetByDiscordId(discordChannelId);
+        _successPermissions = channel?.State.HasFlag(ChannelState.Enable) == true;
+        return _successPermissions;
+    }
+
+    public async Task<string?> ProcessMessageSend(InputChatMessageViewModel input)
+    {
+        if (!_successPermissions) return null;
+
         var userFilter = new UserRegisterViewModel(input.DiscordUserId, input.UserName);
         var user = await _userService.AddOrGetUser(userFilter);
 

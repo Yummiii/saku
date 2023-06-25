@@ -1,3 +1,4 @@
+using Saku.Models;
 using Saku.ViewModels;
 
 namespace Saku.Adapters.Interfaces;

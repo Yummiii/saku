@@ -26,4 +26,5 @@ public class ChatContextModel
     public int? UserId { get; set; }
     public UserModel? User { get; set; }
     public ulong ChannelId { get; set; }
+    public ChannelModel? Channel { get; set; }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Saku.Database;
 
@@ -10,9 +11,10 @@ using Saku.Database;
 namespace Saku.Migrations
 {
     [DbContext(typeof(SakuDbContext))]
-    partial class SakuDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230625024943_ChatContext.Message To LongText")]
+    partial class ChatContextMessageToLongText
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

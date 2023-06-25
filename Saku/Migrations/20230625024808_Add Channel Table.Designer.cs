@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Saku.Database;
 
@@ -10,9 +11,10 @@ using Saku.Database;
 namespace Saku.Migrations
 {
     [DbContext(typeof(SakuDbContext))]
-    partial class SakuDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230625024808_Add Channel Table")]
+    partial class AddChannelTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -64,7 +66,7 @@ namespace Saku.Migrations
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("text");
 
                     b.Property<int?>("UserId")
                         .HasColumnType("int");

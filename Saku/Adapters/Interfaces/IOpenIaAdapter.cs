@@ -4,6 +4,6 @@ namespace Saku.Adapters.Interfaces;
 
 public interface IOpenIaAdapter
 {
-    Task<IEnumerable<ChatMessageViewModel>> SendChat(IEnumerable<ChatMessageViewModel> chats,
+    Task<ChatMessageViewModel> SendChat(IEnumerable<ChatMessageViewModel> chats,
         GptModelType model = GptModelType.Gpt35Turbo);
 }

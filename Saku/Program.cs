@@ -3,7 +3,9 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Saku.Database;
 using Saku.Extensions;
 using Saku.Services.Interfaces;
 using Saku.ViewModels.Interfaces;
@@ -32,6 +34,7 @@ var dependencyInjection = dependenciesBuilder.BuildServiceProvider();
 #region BotStart
 
 var configs = dependencyInjection.GetRequiredService<ISakuConfig>();
+await dependencyInjection.GetRequiredService<SakuDbContext>().Database.MigrateAsync();
 dependencyInjection.GetRequiredService<IEventLoaderService>().Initialize();
 
 await interactionService.AddModulesAsync(typeof(Program).Assembly, dependencyInjection);

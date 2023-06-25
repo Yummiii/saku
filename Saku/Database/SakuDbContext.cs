@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Saku.Models;
 using Saku.ViewModels.Interfaces;
 
 namespace Saku.Database;
@@ -11,6 +12,8 @@ public class SakuDbContext : DbContext
     {
         _config = config;
     }
+
+    public DbSet<ChatContextModel> ChatContexts => Set<ChatContextModel>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

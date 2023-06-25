@@ -17,21 +17,20 @@ public class OpenIaAdapter : IOpenIaAdapter
         _openAiApi = new OpenAIAPI(sakuConfig.OpenIaToken);
     }
 
-    public async Task<IEnumerable<ChatMessageViewModel>> SendChat(IEnumerable<ChatMessageViewModel> chats,
+    public async Task<ChatMessageViewModel> SendChat(IEnumerable<ChatMessageViewModel> chats,
         GptModelType model = GptModelType.Gpt35Turbo)
     {
-        var chatsMessages = chats.ToList();
-        
         var conversation = _openAiApi.Chat.CreateConversation(new ChatRequest
         {
             Model = model switch
             {
                 GptModelType.Gpt40 => "gpt-4",
-                GptModelType.Gpt35Turbo => "gpt-3.5-turbo"
+                GptModelType.Gpt35Turbo => "gpt-3.5-turbo",
+                _ => throw new ArgumentException("GptVersion is invalid", nameof(model))
             }
         });
 
-        foreach (var chat in chatsMessages)
+        foreach (var chat in chats)
         {
             switch (chat.ChatType)
             {
@@ -53,8 +52,6 @@ public class OpenIaAdapter : IOpenIaAdapter
         }
         
         var response = await conversation.GetResponseFromChatbotAsync();
-        chatsMessages.Add(new ChatMessageViewModel(ChatType.Chat, response));
-
-        return chatsMessages;
+        return new ChatMessageViewModel(ChatType.Chat, response, DateTime.UtcNow);
     }
 }

@@ -15,6 +15,7 @@ public class ChatContextModelConfiguration : IEntityTypeConfiguration<ChatContex
         builder.Property(x => x.Message).HasColumnType("text").IsRequired();
 
         builder.Property(x => x.IsPresentInCurrentContext).IsRequired();
+        builder.HasIndex(x => x.IsPresentInCurrentContext);
 
         builder.Property(x => x.CreatedAt).IsRequired();
 

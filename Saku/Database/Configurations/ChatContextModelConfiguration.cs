@@ -20,5 +20,7 @@ public class ChatContextModelConfiguration : IEntityTypeConfiguration<ChatContex
         builder.Property(x => x.CreatedAt).IsRequired();
 
         builder.Property(x => x.ChannelId).IsRequired();
+
+        builder.HasOne(x => x.User).WithMany(x => x.ChatContexts).HasForeignKey(x => x.UserId);
     }
 }

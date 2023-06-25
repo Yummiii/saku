@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Saku.Database;
 
@@ -10,9 +11,10 @@ using Saku.Database;
 namespace Saku.Migrations
 {
     [DbContext(typeof(SakuDbContext))]
-    partial class SakuDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230625002837_Add Foreing Key ChatContext-Users")]
+    partial class AddForeingKeyChatContextUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -75,7 +77,7 @@ namespace Saku.Migrations
                     b.HasIndex("DiscordId")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("UserModel");
                 });
 
             modelBuilder.Entity("Saku.Models.ChatContextModel", b =>

@@ -2,6 +2,7 @@ using Lina.DynamicServicesProvider.Attributes;
 using OpenAI_API;
 using OpenAI_API.Chat;
 using Saku.Adapters.Interfaces;
+using Saku.Models;
 using Saku.ViewModels;
 using Saku.ViewModels.Interfaces;
 

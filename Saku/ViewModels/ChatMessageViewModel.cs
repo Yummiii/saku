@@ -1,3 +1,5 @@
+using Saku.Models;
+
 namespace Saku.ViewModels;
 
 public record ChatMessageViewModel(

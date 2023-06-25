@@ -1,4 +1,4 @@
-namespace Saku.ViewModels;
+namespace Saku.Models;
 
 public enum ChatType
 {

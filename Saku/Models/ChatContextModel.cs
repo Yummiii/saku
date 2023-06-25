@@ -23,6 +23,7 @@ public class ChatContextModel
     public string Message { get; set; }
     public bool IsPresentInCurrentContext { get; set; }
     public DateTime CreatedAt { get; set; }
-    public ulong? UserId { get; set; }
+    public int? UserId { get; set; }
+    public UserModel? User { get; set; }
     public ulong ChannelId { get; set; }
 }

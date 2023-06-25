@@ -14,6 +14,7 @@ public class SakuDbContext : DbContext
     }
 
     public DbSet<ChatContextModel> ChatContexts => Set<ChatContextModel>();
+    public DbSet<UserModel> Users => Set<UserModel>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

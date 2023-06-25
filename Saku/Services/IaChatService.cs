@@ -17,24 +17,31 @@ public class IaChatService : IIaChatService
     private readonly IChatContextRepository _chatContextRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IUserService _userService;
 
     public IaChatService(
         IOpenIaAdapter openIaAdapter,
         IMapper mapper,
         IChatContextRepository chatContextRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork, 
+        IUserService userService)
     {
         _openIaAdapter = openIaAdapter;
         _mapper = mapper;
         _chatContextRepository = chatContextRepository;
         _unitOfWork = unitOfWork;
+        _userService = userService;
     }
 
     public async Task<string> ProcessMessageSend(InputChatMessageViewModel input)
     {
+        var userFilter = new UserRegisterViewModel(input.DiscordUserId, input.UserName);
+        var user = await _userService.AddOrGetUser(userFilter);
+
+
         var newInput = input with
         {
-            UserName = CleanUsername(input.UserName)
+            UserName = user.UserName
         };
         
         var chatInput = _mapper.Map<ChatMessageViewModel>(newInput);
@@ -43,7 +50,7 @@ public class IaChatService : IIaChatService
         contextToChat.AddLast(chatInput);
         var userInputModel = _mapper.Map<ChatContextModel>(chatInput);
         userInputModel.ChannelId = input.DiscordChannelId;
-        userInputModel.UserId = input.DiscordUserId;
+        userInputModel.UserId = user.Id;
         await _chatContextRepository.Add(userInputModel);
 
 
@@ -57,14 +64,5 @@ public class IaChatService : IIaChatService
         return response.Message;
     }
 
-    private static string CleanUsername(string username)
-    {
-        var cleanUsername = Regex.Replace(username, @"[^a-zA-Z0-9_-]", string.Empty);
-        if (cleanUsername.Length > 64)
-        {
-            cleanUsername = cleanUsername[..64];
-        }
-
-        return cleanUsername;
-    }
+    
 }

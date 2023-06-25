@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Saku.Database;
 
@@ -10,9 +11,10 @@ using Saku.Database;
 namespace Saku.Migrations
 {
     [DbContext(typeof(SakuDbContext))]
-    partial class SakuDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230625002307_Add User Table")]
+    partial class AddUserTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,14 +43,12 @@ namespace Saku.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
+                    b.Property<ulong?>("UserId")
+                        .HasColumnType("bigint unsigned");
 
                     b.HasKey("Id");
 
                     b.HasIndex("IsPresentInCurrentContext");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("ChatContexts");
                 });
@@ -75,21 +75,7 @@ namespace Saku.Migrations
                     b.HasIndex("DiscordId")
                         .IsUnique();
 
-                    b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("Saku.Models.ChatContextModel", b =>
-                {
-                    b.HasOne("Saku.Models.UserModel", "User")
-                        .WithMany("ChatContexts")
-                        .HasForeignKey("UserId");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Saku.Models.UserModel", b =>
-                {
-                    b.Navigation("ChatContexts");
+                    b.ToTable("UserModel");
                 });
 #pragma warning restore 612, 618
         }

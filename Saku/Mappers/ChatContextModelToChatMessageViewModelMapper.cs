@@ -6,10 +6,9 @@ using Saku.ViewModels;
 namespace Saku.Mappers;
 
 public class
-    ChatContextModelToChatMessageViewModel : DynamicMapperProfile<ChatContextModel, ChatMessageViewModel>
+    ChatContextModelToChatMessageViewModelMapper : DynamicMapperProfile<ChatContextModel, ChatMessageViewModel>
 {
     protected override void Map(IMappingExpression<ChatContextModel, ChatMessageViewModel> mappingExpression)
     {
-        
     }
 }

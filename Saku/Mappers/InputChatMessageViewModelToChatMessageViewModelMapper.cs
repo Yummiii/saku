@@ -1,5 +1,6 @@
 using AutoMapper;
 using Lina.DynamicMapperConfiguration.Abstracts;
+using Saku.Models;
 using Saku.ViewModels;
 
 namespace Saku.Mappers;
